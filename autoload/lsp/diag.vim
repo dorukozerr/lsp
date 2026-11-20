@@ -534,6 +534,27 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
   endif
 enddef
 
+# A full-document formatting request returned no edits.  Report this as a
+# diagnostic, so a file that is not covered by the formatter configuration
+# (or a file that is already formatted) is not silently ignored.
+export def FormatNoEditsDiag(lspserver: dict<any>, bnr: number)
+  var uri: string = util.LspFileToUri(bnr->bufname())
+  DiagNotification(lspserver, uri, [{
+    range: {start: {line: 0, character: 0}, end: {line: 0, character: 0}},
+    message: $'No formatting edits returned by "{lspserver.name}".  The file may already be formatted, or it may not match the formatter configuration (e.g. ignorePatterns / sections).',
+    severity: 2,  # Warning
+    source: lspserver.name,
+    code: 'formatNoEdits'
+  }], 'formatNoEdits')
+enddef
+
+# Formatting edits were applied (or the file was formatted); clear the
+# "no formatting edits" diagnostic.
+export def FormatEditsDiagClear(lspserver: dict<any>, bnr: number)
+  var uri: string = util.LspFileToUri(bnr->bufname())
+  DiagNotification(lspserver, uri, [], 'formatNoEdits')
+enddef
+
 # get the count of error in the current buffer
 export def DiagsGetErrorCount(bnr: number): dict<number>
   var diagSevCount: list<number> = [0, 0, 0, 0, 0]

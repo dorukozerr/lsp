@@ -239,6 +239,21 @@ export var lspOptions: dict<any> = {
   # Ignore >ItemsIsIncomplete< messages from misbehaving servers:
   ignoreCompleteItemsIsIncomplete: [],
 
+  # Request completions from all the attached LSP servers that support
+  # completion and merge the results.  Otherwise only the first matching
+  # server is used.
+  completionFromAllServers: true,
+
+  # When true, only servers whose configuration has "features.completion" set
+  # to true are used for completion.  Servers without an explicit
+  # features.completion setting are ignored.
+  completionRequireOptIn: false,
+
+  # When a full-document formatting request returns no edits, report a
+  # warning diagnostic.  Useful to notice files that are not covered by a
+  # formatter configuration (e.g. oxfmt ignorePatterns / sections).
+  formatNoEditsDiags: true,
+
   # Text format for documentation and hovers.
   documentationFormat: ['markdown', 'plaintext'],
 

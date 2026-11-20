@@ -1012,7 +1012,10 @@ enddef
 # Get a list of completion items.
 # Request: "textDocument/completion"
 # Param: CompletionParams
-def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: string): void
+# "sessionKey" identifies a multi-server completion session.  When empty, the
+# reply is processed as a standalone single-server completion reply.
+def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: string,
+                  sessionKey: string = ''): void
   # Check whether LSP server supports completion
   if !lspserver.isCompletionProvider
     util.ErrMsg('LSP server does not support completion')
@@ -1034,7 +1037,8 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: st
   endif
 
   lspserver.rpc_a('textDocument/completion', params,
-			(_, reply, error) => completion.CompletionReply(lspserver, reply, error))
+			(_, reply, error) =>
+				completion.CompletionReply(lspserver, reply, error, sessionKey))
 enddef
 
 # Get lazy properties for a completion item.
@@ -1520,7 +1524,11 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   # result: TextEdit[] | null
 
   if reply->empty() || reply.result->empty()
-    # nothing to format
+    # nothing to format.  Report it as a diagnostic, so a file that is not
+    # covered by the formatter configuration is not silently ignored.
+    if !rangeFormat && opt.lspOptions.formatNoEditsDiags
+      diag.FormatNoEditsDiag(lspserver, bnr)
+    endif
     return
   endif
 
@@ -1540,6 +1548,11 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   # interface TextEdit
   # Apply each of the text edit operations
   textedit.ApplyTextEdits(bnr, reply.result)
+
+  if opt.lspOptions.formatNoEditsDiags
+    # formatting succeeded, clear a previous "no edits" diagnostic
+    diag.FormatEditsDiagClear(lspserver, bnr)
+  endif
 enddef
 
 # Adjust 'origPos' (a decoded, 0-indexed {line, character} position) to
